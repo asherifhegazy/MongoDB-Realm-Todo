@@ -26,7 +26,7 @@ export function useTodos() {
 
   // Fetch all todos on load and whenever our collection changes (e.g. if the current user changes)
   React.useEffect(() => {
-    taskCollection.find({}).then((fetchedTodos) => {
+    taskCollection.find({ isDeleted: false }).then((fetchedTodos) => {
       setTodos(fetchedTodos);
       setLoading(false);
     });
@@ -41,11 +41,7 @@ export function useTodos() {
         }
         const idx =
           getTodoIndex(oldTodos, change.fullDocument) ?? oldTodos.length;
-        if (idx === oldTodos.length) {
-          return addValueAtIndex(oldTodos, idx, change.fullDocument);
-        } else {
-          return oldTodos;
-        }
+        return idx === oldTodos.length ? addValueAtIndex(oldTodos, idx, change.fullDocument) : oldTodos;
       });
     },
     onUpdate: (change) => {
@@ -54,6 +50,10 @@ export function useTodos() {
           return oldTodos;
         }
         const idx = getTodoIndex(oldTodos, change.fullDocument);
+        if (change.fullDocument.isDeleted) {
+          return idx >= 0 ? removeValueAtIndex(oldTodos, idx) : oldTodos;
+        }
+
         return updateValueAtIndex(oldTodos, idx, () => {
           return change.fullDocument;
         });
@@ -74,11 +74,7 @@ export function useTodos() {
           return oldTodos;
         }
         const idx = getTodoIndex(oldTodos, { _id: change.documentKey._id });
-        if (idx >= 0) {
-          return removeValueAtIndex(oldTodos, idx);
-        } else {
-          return oldTodos;
-        }
+        return idx >= 0 ? removeValueAtIndex(oldTodos, idx) : oldTodos;
       });
     },
   });
@@ -109,8 +105,14 @@ export function useTodos() {
   };
 
   // Delete a given todo
-  const deleteTodo = async (todo) => {
-    await taskCollection.deleteOne({ _id: todo._id });
+  const deleteTodo = async (todo, hardDelete = true) => {
+    if (hardDelete)
+      await taskCollection.deleteOne({ _id: todo._id });
+    else
+      await taskCollection.updateOne(
+        { _id: todo._id },
+        { $set: { isDeleted: !todo.isDeleted } }
+      );
   };
 
   return {

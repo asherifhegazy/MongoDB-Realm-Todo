@@ -28,7 +28,8 @@ export function TodoItem({ todo, todoActions }) {
           edge="end"
           size="small"
           onClick={() => {
-            todoActions.deleteTodo(todo);
+            const hardDelete = window.confirm("Do you want to delete this item completly?");
+            todoActions.deleteTodo(todo, hardDelete);
           }}
         >
           <ClearIcon />

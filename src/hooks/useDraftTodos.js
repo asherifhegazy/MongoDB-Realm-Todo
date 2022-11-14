@@ -9,6 +9,7 @@ export function useDraftTodos() {
       _id: new Realm.BSON.ObjectID(),
       summary: "",
       isComplete: false,
+      isDeleted: false,
     };
     setDrafts((d) => [...d, draftTodo]);
   };
